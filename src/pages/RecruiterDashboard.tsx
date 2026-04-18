@@ -36,26 +36,38 @@ export function RecruiterDashboard() {
 
     // Fetch Recruiter's Jobs
     const jobsRef = collection(db, 'jobs');
-    const jobsQuery = query(jobsRef, where('recruiterId', '==', user.uid), orderBy('createdAt', 'desc'));
+    const jobsQuery = query(jobsRef, where('recruiterId', '==', user.uid));
 
     const unsubscribeJobs = onSnapshot(jobsQuery, (snapshot) => {
       const jobsList = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       }));
-      setJobs(jobsList);
+
+      // Sort client-side to avoid index requirement
+      const sortedJobs = (jobsList as any[]).sort((a, b) => 
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+
+      setJobs(sortedJobs);
+      setLoading(false);
+    }, (err) => {
+      console.error("Recruiter jobs sync error:", err);
+      // Ensure we don't hang forever if query fails
       setLoading(false);
     });
 
     // Fetch Applications for these jobs
     const appsRef = collection(db, 'applications');
-    const appsQuery = query(appsRef, where('recruiterId', '==', user.uid), orderBy('appliedAt', 'desc'));
+    const appsQuery = query(appsRef, where('recruiterId', '==', user.uid));
     const unsubscribeApps = onSnapshot(appsQuery, (snapshot) => {
       const appsList = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       }));
       setApplications(appsList);
+    }, (err) => {
+      console.error("Recruiter apps sync error:", err);
     });
 
     return () => {

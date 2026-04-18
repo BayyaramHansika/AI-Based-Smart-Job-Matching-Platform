@@ -44,18 +44,26 @@ export function Dashboard() {
 
     // Fetch User Application Stats & Recent Apps
     const appsRef = collection(db, 'applications');
-    const appsQuery = query(appsRef, where('seekerId', '==', user.uid), orderBy('appliedAt', 'desc'));
+    const appsQuery = query(appsRef, where('seekerId', '==', user.uid));
     const unsubscribeApps = onSnapshot(appsQuery, (snapshot) => {
       const apps = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       })) as any[];
-      setRecentApps(apps.slice(0, 3));
+      
+      // Sort client-side to avoid index requirement
+      const sortedApps = apps.sort((a, b) => 
+        new Date(b.appliedAt).getTime() - new Date(a.appliedAt).getTime()
+      );
+
+      setRecentApps(sortedApps.slice(0, 3));
       setAppStats({
         total: apps.length,
         pending: apps.filter(a => a.status === 'pending').length,
         interviews: apps.filter(a => a.status === 'interviewing').length
       });
+    }, (err) => {
+      console.error("Dashboard apps sync error:", err);
     });
 
     return () => {
@@ -74,7 +82,14 @@ export function Dashboard() {
   }
 
   // If loading is done but no profile yet (shouldn't happen with AuthContext)
-  if (!profile) return null;
+  if (!profile) {
+    return (
+      <div className="flex flex-col items-center justify-center h-[60vh] text-brand-text-muted">
+        <Loader2 className="w-10 h-10 animate-spin mb-4 text-brand-primary" />
+        <p className="font-bold">Syncing your workspace...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-in fade-in slide-in-from-bottom-4 duration-700">

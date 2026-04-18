@@ -28,15 +28,31 @@ export function Profile() {
   
   // Local state for editing
   const [formData, setFormData] = React.useState({
-    displayName: profile?.displayName || '',
-    title: profile?.title || '',
-    location: profile?.location || '',
-    phone: profile?.phone || '',
-    bio: profile?.bio || '',
-    skills: profile?.skills || [],
-    resumeUrl: profile?.resumeUrl || '',
-    portfolioUrl: (profile as any)?.portfolioUrl || ''
+    displayName: '',
+    title: '',
+    location: '',
+    phone: '',
+    bio: '',
+    skills: [] as string[],
+    resumeUrl: '',
+    portfolioUrl: ''
   });
+
+  // Sync profile to form data when profile loads or resets
+  React.useEffect(() => {
+    if (profile && !isEditing) {
+      setFormData({
+        displayName: profile.displayName || '',
+        title: profile.title || '',
+        location: profile.location || '',
+        phone: profile.phone || '',
+        bio: profile.bio || '',
+        skills: profile.skills || [],
+        resumeUrl: profile.resumeUrl || '',
+        portfolioUrl: (profile as any).portfolioUrl || ''
+      });
+    }
+  }, [profile, isEditing]);
 
   const handleSave = async () => {
     await updateProfile(formData);

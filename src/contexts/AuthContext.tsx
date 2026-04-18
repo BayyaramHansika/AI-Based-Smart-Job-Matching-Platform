@@ -4,7 +4,7 @@ import {
   User as FirebaseUser,
   signOut as firebaseSignOut
 } from 'firebase/auth';
-import { doc, getDoc, getDocFromServer, setDoc } from 'firebase/firestore';
+import { doc, setDoc, onSnapshot } from 'firebase/firestore';
 import { auth, db } from '../lib/firebase';
 import { UserProfile, UserRole } from '../types';
 
@@ -27,45 +27,40 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [role, setRole] = useState<UserRole>('seeker');
 
   useEffect(() => {
-    // Safety timeout to avoid infinite loading screens
-    const timeout = setTimeout(() => {
-      if (loading) setLoading(false);
-    }, 4000); // Reduced delay for faster transition
+    let profileUnsub: (() => void) | null = null;
 
-    const unsub = onAuthStateChanged(auth, async (firebaseUser) => {
-      clearTimeout(timeout);
+    const authUnsub = onAuthStateChanged(auth, (firebaseUser) => {
       setUser(firebaseUser);
       
+      // Clean up previous profile listener if it exists
+      if (profileUnsub) {
+        profileUnsub();
+        profileUnsub = null;
+      }
+
       if (firebaseUser) {
-        // Optimistically set loading to false to show the shell while profile loads
-        setLoading(false);
-        
-        try {
-          // Try local cache first for instant load
-          const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
-          if (userDoc.exists()) {
-            const data = userDoc.data() as UserProfile;
+        // Use onSnapshot for real-time profile syncing
+        profileUnsub = onSnapshot(doc(db, 'users', firebaseUser.uid), (doc) => {
+          if (doc.exists()) {
+            const data = doc.data() as UserProfile;
             setProfile(data);
             setRole(data.role);
-          } else {
-            // Fallback to server only if cache empty
-            const serverDoc = await getDocFromServer(doc(db, 'users', firebaseUser.uid));
-            if (serverDoc.exists()) {
-              const data = serverDoc.data() as UserProfile;
-              setProfile(data);
-              setRole(data.role);
-            }
           }
-        } catch (err: any) {
-          console.warn("Background profile fetch issue:", err.message);
-        }
+          setLoading(false);
+        }, (err) => {
+          console.error("Profile sync error:", err);
+          setLoading(false);
+        });
       } else {
         setProfile(null);
         setLoading(false);
       }
     });
 
-    return () => unsub();
+    return () => {
+      authUnsub();
+      if (profileUnsub) profileUnsub();
+    };
   }, []);
 
   const logout = async () => {
