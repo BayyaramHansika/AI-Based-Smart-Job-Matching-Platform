@@ -1,0 +1,37 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // CORE PERFORMANCE HELPERS: These use zero database lookups for maximum speed
+    function isSignedIn() { return request.auth != null; }
+    function isOwner(uid) { return isSignedIn() && request.auth.uid == uid; }
+
+    // USERS: Allows any logged-in user to see other profiles, 
+    // but only the owner can change their own information.
+    match /users/{userId} {
+      allow read: if isSignedIn();
+      allow write: if isOwner(userId);
+    }
+
+    // JOBS: Allows full permissions for anyone signed in to post/edit jobs.
+    // This is the fastest setting for development.
+    match /jobs/{jobId} {
+      allow read, write: if isSignedIn();
+    }
+
+    // APPLICATIONS: Allows any signed-in user to apply or view applications.
+    match /applications/{appId} {
+      allow read, write: if isSignedIn();
+    }
+    
+    // MESSAGES: Standard signed-in access.
+    match /messages/{messageId} {
+      allow read, write: if isSignedIn();
+    }
+
+    // GLOBAL SAFETY: Deny everything else that isn't explicitly defined above.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

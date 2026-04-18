@@ -1,0 +1,67 @@
+{
+  "entities": {
+    "User": {
+      "title": "User Profile",
+      "description": "Stores professional and personal details of job seekers and recruiters.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string" },
+        "displayName": { "type": "string" },
+        "role": { "type": "string", "enum": ["seeker", "recruiter"] },
+        "title": { "type": "string" },
+        "location": { "type": "string" },
+        "bio": { "type": "string" },
+        "skills": { "type": "array" },
+        "profileStrength": { "type": "number" }
+      },
+      "required": ["uid", "email", "role"]
+    },
+    "Job": {
+      "title": "Job Listing",
+      "description": "Stores job positions posted by recruiters.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "company": { "type": "string" },
+        "location": { "type": "string" },
+        "salary": { "type": "string" },
+        "tags": { "type": "array" },
+        "description": { "type": "string" },
+        "recruiterId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "company", "recruiterId"]
+    },
+    "Application": {
+      "title": "Job Application",
+      "description": "Stores applications submitted by seekers.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "jobId": { "type": "string" },
+        "recruiterId": { "type": "string" },
+        "seekerId": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "reviewed", "accepted", "rejected", "cancelled"] },
+        "appliedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["jobId", "recruiterId", "seekerId", "status"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profile documents"
+    },
+    "/jobs/{jobId}": {
+      "schema": "Job",
+      "description": "Job listing documents"
+    },
+    "/applications/{appId}": {
+      "schema": "Application",
+      "description": "Job application documents"
+    }
+  }
+}
