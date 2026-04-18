@@ -305,14 +305,16 @@ export function Login() {
             type="button"
             onClick={handleGoogleLogin}
             disabled={loading || googleLoading}
-            className="w-full bg-white text-brand-text-main py-3 rounded-lg font-bold border border-brand-border hover:bg-brand-bg transition-all flex items-center justify-center gap-2 disabled:opacity-70 mb-2"
+            className="w-full bg-white text-brand-text-main py-3.5 rounded-lg font-bold border border-brand-border hover:bg-brand-bg hover:border-brand-primary/30 transition-all flex items-center justify-center gap-3 disabled:opacity-70 mb-2 shadow-sm active:scale-[0.98]"
           >
             {googleLoading ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
+              <Loader2 className="w-5 h-5 animate-spin" />
             ) : (
-              <Chrome className="w-4 h-4 text-brand-primary" />
+              <div className="flex items-center gap-3">
+                <Chrome className="w-5 h-5 text-brand-primary" />
+                <span>Sign in with Google</span>
+              </div>
             )}
-            Google Account
           </button>
 
           <div className="mt-8 text-center pt-8 border-t border-brand-bg">
