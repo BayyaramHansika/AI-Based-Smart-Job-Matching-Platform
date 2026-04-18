@@ -57,6 +57,11 @@ export function Login() {
       // Navigate immediately for instant feel
       navigate('/');
     } catch (err: any) {
+      if (err.code === 'auth/popup-closed-by-user') {
+        setGoogleLoading(false);
+        return; // User closed the popup, don't show an error
+      }
+      
       console.error("Google Login Error:", err);
       // Construct a better error message
       let msg = err.message || "Failed to sign in with Google";

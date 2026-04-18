@@ -18,16 +18,27 @@ export function Dashboard() {
   useEffect(() => {
     if (!user || profile?.role !== 'seeker') return;
 
-    // Fetch Recommendations (Latest high-scoring jobs)
+    // Fetch ALL Jobs for recommendation engine
     const jobsRef = collection(db, 'jobs');
-    const jobsQuery = query(jobsRef, orderBy('createdAt', 'desc'), limit(3));
+    const jobsQuery = query(jobsRef, orderBy('createdAt', 'desc'), limit(10));
 
     const unsubscribeJobs = onSnapshot(jobsQuery, (snapshot) => {
       const jobsList = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
-      }));
-      setRecommendations(jobsList);
+      })) as any[];
+
+      // Sort by match with profile title if exists
+      const sorted = [...jobsList].sort((a: any, b: any) => {
+        if (profile?.title) {
+          const aMatch = a.title?.toLowerCase().includes(profile.title.toLowerCase()) ? 1 : 0;
+          const bMatch = b.title?.toLowerCase().includes(profile.title.toLowerCase()) ? 1 : 0;
+          return bMatch - aMatch;
+        }
+        return 0;
+      });
+
+      setRecommendations(sorted.slice(0, 4));
       setLoading(false);
     });
 
