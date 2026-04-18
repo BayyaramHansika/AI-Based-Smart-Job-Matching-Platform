@@ -34,28 +34,27 @@ export function Login() {
       const result = await signInWithPopup(auth, provider);
       const user = result.user;
 
-      // Try cache first for speed, fallback to server if needed
-      let userDoc = await getDoc(doc(db, 'users', user.uid)).catch(() => null);
-      if (!userDoc || !userDoc.exists()) {
-        userDoc = await getDocFromServer(doc(db, 'users', user.uid)).catch(() => null);
-      }
-      
-      if (!userDoc || !userDoc.exists()) {
-        // Create initial profile if first time
-        await setDoc(doc(db, 'users', user.uid), {
-          uid: user.uid,
-          email: user.email,
-          displayName: user.displayName,
-          role: role, 
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          profileStrength: 20,
-          skills: [],
-          bio: '',
-          title: role === 'seeker' ? 'Job Seeker' : 'Hiring Manager',
-          location: ''
-        });
-      }
+      // Optimistically create profile if it might not exist, but DON'T wait for it to finish before navigating
+      // AuthContext will handle the fetching/loading state independently
+      getDoc(doc(db, 'users', user.uid)).then(userDoc => {
+        if (!userDoc.exists()) {
+          setDoc(doc(db, 'users', user.uid), {
+            uid: user.uid,
+            email: user.email,
+            displayName: user.displayName,
+            role: role, 
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            profileStrength: 20,
+            skills: [],
+            bio: '',
+            title: role === 'seeker' ? 'Job Seeker' : 'Hiring Manager',
+            location: ''
+          });
+        }
+      }).catch(err => console.warn("Background profile check failed:", err.message));
+
+      // Navigate immediately for instant feel
       navigate('/');
     } catch (err: any) {
       console.error("Google Login Error:", err);
@@ -79,13 +78,11 @@ export function Login() {
     try {
       if (isLogin) {
         await signInWithEmailAndPassword(auth, email, password);
-        setSuccess("Success! Redirecting...");
       } else {
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         const user = userCredential.user;
         
         await updateFirebaseProfile(user, { displayName: name });
-        setSuccess("Account created! Finalizing profile...");
 
         // Save initial profile to Firestore in background (non-blocking)
         const profileData = {
@@ -102,14 +99,12 @@ export function Login() {
           location: ''
         };
 
-        // Fire and forget - AuthContext will handle missing profile on next load
         setDoc(doc(db, 'users', user.uid), profileData).catch(err => 
           console.warn("Background profile creation delayed:", err.message)
         );
       }
       
-      // Delay navigation slightly to let user see success message
-      setTimeout(() => navigate('/'), 800);
+      navigate('/');
     } catch (err: any) {
       console.error("Auth Error:", err);
       

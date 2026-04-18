@@ -16,10 +16,15 @@ import { useAuth } from '../contexts/AuthContext';
 export function Sidebar() {
   const { role, logout, profile } = useAuth();
   
-  const navItems = [
+  const navItems = role === 'seeker' ? [
     { name: 'Dashboard', icon: LayoutDashboard, href: '/' },
     { name: 'Job Search', icon: Search, href: '/jobs' },
-    { name: 'Applications', icon: Briefcase, href: '/applications' },
+    { name: 'My Applications', icon: Briefcase, href: '/applications' },
+    { name: 'Messages', icon: MessageSquare, href: '/messages' },
+    { name: 'Profile', icon: UserCircle, href: '/profile' },
+  ] : [
+    { name: 'Dashboard', icon: LayoutDashboard, href: '/' },
+    { name: 'Post a Job', icon: Briefcase, href: '/' }, // Handled by dashboard now
     { name: 'Messages', icon: MessageSquare, href: '/messages' },
     { name: 'My Profile', icon: UserCircle, href: '/profile' },
   ];

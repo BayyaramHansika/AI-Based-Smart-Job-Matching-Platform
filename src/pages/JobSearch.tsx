@@ -68,24 +68,57 @@ export function JobSearch() {
     }
   };
 
-  const filteredJobs = jobs.filter(job => {
-    const matchesSearch = 
-      job.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      job.company?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      job.description?.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesLocation = 
-      job.location?.toLowerCase().includes(locationSearch.toLowerCase());
+  const handleSearch = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    setLoading(true);
+    // Simulate search delay for better UX
+    setTimeout(() => {
+      setLoading(false);
+    }, 600);
+  };
 
-    return matchesSearch && matchesLocation;
-  });
+  const filteredJobs = jobs
+    .filter(job => {
+      const matchesSearch = 
+        !searchTerm ||
+        job.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        job.company?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        job.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        job.tags?.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()));
+      
+      const matchesLocation = 
+        !locationSearch ||
+        job.location?.toLowerCase().includes(locationSearch.toLowerCase());
+
+      return matchesSearch && matchesLocation;
+    })
+    .sort((a, b) => {
+      // If there's a search term, bring more relevant titles to the top
+      if (searchTerm) {
+        const aTitleMatch = a.title?.toLowerCase().includes(searchTerm.toLowerCase()) ? 1 : 0;
+        const bTitleMatch = b.title?.toLowerCase().includes(searchTerm.toLowerCase()) ? 1 : 0;
+        return bTitleMatch - aTitleMatch;
+      }
+      
+      // If no search, but we have a user profile, prioritize jobs matching their role/title
+      if (profile?.title && !searchTerm && !locationSearch) {
+        const aMatch = a.title?.toLowerCase().includes(profile.title.toLowerCase()) ? 1 : 0;
+        const bMatch = b.title?.toLowerCase().includes(profile.title.toLowerCase()) ? 1 : 0;
+        return bMatch - aMatch;
+      }
+
+      return 0; // Keep Firestore sort (createdAt desc)
+    });
 
   const isApplied = (jobId: string) => applications.some(app => app.jobId === jobId);
 
   return (
     <div className="space-y-6 animate-in fade-in duration-700">
       {/* Search Bar */}
-      <div className="bg-brand-surface border border-brand-border rounded-radius-card p-6 shadow-sm">
+      <form 
+        onSubmit={handleSearch}
+        className="bg-brand-surface border border-brand-border rounded-radius-card p-6 shadow-sm"
+      >
         <div className="flex flex-col md:flex-row gap-4">
           <div className="flex-1 relative">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-brand-text-muted" />
@@ -107,23 +140,38 @@ export function JobSearch() {
               onChange={(e) => setLocationSearch(e.target.value)}
             />
           </div>
-          <button className="bg-brand-primary text-white px-8 py-3 rounded-radius-item font-bold hover:bg-brand-primary/90 transition-all flex items-center justify-center gap-2">
+          <button 
+            type="submit"
+            className="bg-brand-primary text-white px-8 py-3 rounded-radius-item font-bold hover:bg-brand-primary/90 transition-all flex items-center justify-center gap-2 active:scale-95"
+          >
+            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
             Find Jobs
           </button>
         </div>
 
         <div className="flex flex-wrap gap-3 mt-6">
-          <button className="flex items-center gap-2 px-4 py-1.5 rounded-radius-tag border border-brand-border bg-brand-surface text-[13px] font-medium text-brand-text-muted hover:border-brand-primary transition-colors">
+          <button 
+            type="button"
+            className="flex items-center gap-2 px-4 py-1.5 rounded-radius-tag border border-brand-border bg-brand-surface text-[13px] font-medium text-brand-text-muted hover:border-brand-primary transition-colors"
+          >
             <Filter className="w-4 h-4" /> Filters
           </button>
           <div className="h-6 w-px bg-brand-border mx-1" />
           {['Full-time', 'Remote', 'Design', 'Engineering', '$100k+'].map(tag => (
-            <button key={tag} className="px-4 py-1.5 rounded-radius-tag border border-brand-border bg-brand-bg text-[13px] font-medium text-brand-text-muted hover:border-brand-primary transition-colors">
+            <button 
+              key={tag} 
+              type="button"
+              onClick={() => {
+                setSearchTerm(tag === '$100k+' ? searchTerm : tag);
+                handleSearch();
+              }}
+              className="px-4 py-1.5 rounded-radius-tag border border-brand-border bg-brand-bg text-[13px] font-medium text-brand-text-muted hover:border-brand-primary transition-colors"
+            >
               {tag}
             </button>
           ))}
         </div>
-      </div>
+      </form>
 
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-bold text-brand-text-main flex items-center gap-2">

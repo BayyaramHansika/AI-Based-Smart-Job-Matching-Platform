@@ -16,7 +16,7 @@ export function Dashboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user || profile?.role !== 'seeker') return;
 
     // Fetch Recommendations (Latest high-scoring jobs)
     const jobsRef = collection(db, 'jobs');
@@ -51,9 +51,9 @@ export function Dashboard() {
       unsubscribeJobs();
       unsubscribeApps();
     };
-  }, [user]);
+  }, [user, profile]);
 
-  if (loading) {
+  if (loading && profile?.role === 'seeker') {
     return (
       <div className="flex flex-col items-center justify-center h-[60vh] text-brand-text-muted">
         <Loader2 className="w-10 h-10 animate-spin mb-4 text-brand-primary" />
@@ -61,6 +61,9 @@ export function Dashboard() {
       </div>
     );
   }
+
+  // If loading is done but no profile yet (shouldn't happen with AuthContext)
+  if (!profile) return null;
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
