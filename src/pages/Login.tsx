@@ -69,6 +69,8 @@ export function Login() {
         msg = "The sign-in popup was blocked by your browser. Please allow popups for this site.";
       } else if (err.code === 'auth/network-request-failed') {
         msg = "Network connection failed. Please check your internet connection.";
+      } else if (err.code === 'auth/unauthorized-domain') {
+        msg = "This domain is not authorized for Google Sign-in. Please add '" + window.location.hostname + "' to the 'Authorized domains' list in your Firebase Console (Authentication > Settings).";
       }
       setError(msg);
       setGoogleLoading(false);
